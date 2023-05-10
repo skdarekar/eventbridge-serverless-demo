@@ -1,18 +1,34 @@
-'use strict';
+const AWS = require('aws-sdk');
+const eventBridge = new AWS.EventBridge();
 
-module.exports.hello = async (event) => {
-  return {
-    statusCode: 200,
-    body: JSON.stringify(
+module.exports.publishEvent = async (event) => {
+  console.log("Publish Event:",event);
+  const params = {
+    Entries: [
       {
-        message: 'Go Serverless v1.0! Your function executed successfully!',
-        input: event,
+        Source: 'my-source',
+        DetailType: 'my-detail-type',
+        Detail: JSON.stringify(JSON.parse(event.body)),
       },
-      null,
-      2
-    ),
+    ],
   };
 
-  // Use this code if you don't use the http event with the LAMBDA-PROXY integration
-  // return { message: 'Go Serverless v1.0! Your function executed successfully!', event };
+  try {
+    const data = await eventBridge.putEvents(params).promise();
+    console.log(`Event published: ${JSON.stringify(event.body)}`);
+    return {
+      statusCode: 200,
+      body: JSON.stringify(data),
+    };
+  } catch (err) {
+    console.log(err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: err }),
+    };
+  }
+};
+
+module.exports.consumeEvent = async (event) => {
+  console.log(`Event consumed: ${JSON.stringify(event.detail)}`);
 };
